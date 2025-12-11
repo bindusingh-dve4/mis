@@ -1,0 +1,297 @@
+
+{% extends "base.html" %}
+
+{% block title %}MIS Tracking Dashboard - Management{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="mb-8 flex justify-between items-start">
+        <div>
+            <h2 class="text-4xl font-bold text-gray-800 mb-2">
+                <i class="fas fa-chart-line text-purple-600"></i> MIS Tracking Dashboard
+            </h2>
+            <p class="text-gray-600">Monitor MIS submission status across all departments</p>
+        </div>
+        <a href="{{ url_for('dashboard') }}" class="btn bg-indigo-600 text-white hover:bg-indigo-700 px-6 py-3">
+            <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+        <div class="card p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm opacity-90">Total Departments</p>
+                    <p class="text-3xl font-bold mt-1">{{ total_departments }}</p>
+                </div>
+                <i class="fas fa-building text-4xl opacity-50"></i>
+            </div>
+        </div>
+        
+        <div class="card p-6 bg-gradient-to-br from-green-500 to-green-600 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm opacity-90">Submitted</p>
+                    <p class="text-3xl font-bold mt-1">{{ submitted_count }}</p>
+                </div>
+                <i class="fas fa-check-circle text-4xl opacity-50"></i>
+            </div>
+        </div>
+        
+        <div class="card p-6 bg-gradient-to-br from-orange-500 to-orange-600 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm opacity-90">Pending Review</p>
+                    <p class="text-3xl font-bold mt-1">{{ pending_review_count }}</p>
+                </div>
+                <i class="fas fa-clock text-4xl opacity-50"></i>
+            </div>
+        </div>
+        
+        <div class="card p-6 bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm opacity-90">Approved</p>
+                    <p class="text-3xl font-bold mt-1">{{ approved_count }}</p>
+                </div>
+                <i class="fas fa-check-double text-4xl opacity-50"></i>
+            </div>
+        </div>
+        
+        <div class="card p-6 bg-gradient-to-br from-red-500 to-red-600 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm opacity-90">Not Submitted</p>
+                    <p class="text-3xl font-bold mt-1">{{ not_submitted_count }}</p>
+                </div>
+                <i class="fas fa-exclamation-triangle text-4xl opacity-50"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Month/Year Filter -->
+    <div class="card p-6 mb-8">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold flex items-center gap-2">
+                <i class="fas fa-filter text-blue-600"></i> Select Period
+            </h3>
+            <div class="flex gap-2">
+                <button onclick="exportToExcel()" class="btn bg-green-600 text-white hover:bg-green-700 px-4 py-2">
+                    <i class="fas fa-file-excel mr-2"></i> Export Excel
+                </button>
+                <button onclick="exportToPDF()" class="btn bg-red-600 text-white hover:bg-red-700 px-4 py-2">
+                    <i class="fas fa-file-pdf mr-2"></i> Export PDF
+                </button>
+            </div>
+        </div>
+        <form method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-gray-700 font-medium mb-2">Financial Year</label>
+                <select name="fy_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    {% for fy in financial_years %}
+                    <option value="{{ fy.FYID }}" {% if fy.FYID|string == selected_fy %}selected{% endif %}>
+                        {{ fy.FYName }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-gray-700 font-medium mb-2">Month</label>
+                <select name="month_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    {% for i in range(1, 13) %}
+                    <option value="{{ i }}" {% if i|string == selected_month %}selected{% endif %}>
+                        {{ ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][i] }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="flex items-end">
+                <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                    <i class="fas fa-search mr-2"></i> Apply Filter
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Department Status Table -->
+    <div class="card p-6">
+        <h3 class="text-2xl font-bold mb-4 flex items-center gap-2">
+            <i class="fas fa-list-check text-purple-600"></i> Department-wise MIS Status
+            <span class="text-sm font-normal text-gray-600 ml-2">
+                ({{ ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][selected_month|int] }} {{ selected_fy_name }})
+            </span>
+        </h3>
+        
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-100 border-b-2 border-gray-300">
+                    <tr>
+                        <th class="px-4 py-3 text-left font-bold text-gray-700">Department</th>
+                        <th class="px-4 py-3 text-left font-bold text-gray-700">HOD Name</th>
+                        <th class="px-4 py-3 text-left font-bold text-gray-700">MIS Code</th>
+                        <th class="px-4 py-3 text-left font-bold text-gray-700">Submission Status</th>
+                        <th class="px-4 py-3 text-left font-bold text-gray-700">Upload Date</th>
+                        <th class="px-4 py-3 text-left font-bold text-gray-700">Supervisor Status</th>
+                        <th class="px-4 py-3 text-left font-bold text-gray-700">Overall Status</th>
+                        <th class="px-4 py-3 text-left font-bold text-gray-700">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dept_status in department_statuses %}
+                    <tr class="border-b border-gray-200 hover:bg-gray-50 transition">
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-building text-blue-600"></i>
+                                <span class="font-semibold">{{ dept_status.department_name }}</span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if dept_status.hod_name %}
+                            <div class="text-sm">
+                                <div class="font-medium">{{ dept_status.hod_name }}</div>
+                                <div class="text-gray-500">{{ dept_status.hod_emp_id }}</div>
+                            </div>
+                            {% else %}
+                            <span class="text-gray-400 italic">No HOD assigned</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if dept_status.upload %}
+                            <span class="font-mono font-bold text-blue-600">{{ dept_status.upload.UploadCode }}</span>
+                            {% else %}
+                            <span class="text-gray-400">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if dept_status.upload %}
+                            <span class="px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-700">
+                                <i class="fas fa-check-circle mr-1"></i> Submitted
+                            </span>
+                            {% else %}
+                            <span class="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-700">
+                                <i class="fas fa-times-circle mr-1"></i> Not Submitted
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-sm">
+                            {% if dept_status.upload %}
+                            {{ dept_status.upload.UploadDate.strftime('%d %b %Y %H:%M') }}
+                            {% else %}
+                            <span class="text-gray-400">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if dept_status.upload %}
+                                {% if dept_status.upload.SupervisorApproved %}
+                                <span class="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-700">
+                                    <i class="fas fa-thumbs-up mr-1"></i> Approved
+                                </span>
+                                {% else %}
+                                <span class="px-3 py-1 rounded-full text-sm font-medium bg-orange-100 text-orange-700">
+                                    <i class="fas fa-hourglass-half mr-1"></i> Pending
+                                </span>
+                                {% endif %}
+                            {% else %}
+                            <span class="text-gray-400">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if dept_status.upload %}
+                                {% if dept_status.upload.Status == 'Rejected' %}
+                                <span class="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-700">
+                                    <i class="fas fa-times mr-1"></i> Rejected by Supervisor
+                                </span>
+                                {% elif dept_status.upload.SupervisorApproved and dept_status.upload.Status == 'In Review' %}
+                                <span class="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-700">
+                                    <i class="fas fa-check mr-1"></i> Supervisor Approved
+                                </span>
+                                {% elif dept_status.upload.Status == 'Approved' %}
+                                <span class="px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-700">
+                                    <i class="fas fa-check-double mr-1"></i> Approved
+                                </span>
+                                {% else %}
+                                <span class="px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-700">
+                                    <i class="fas fa-clock mr-1"></i> In Review
+                                </span>
+                                {% endif %}
+                            {% else %}
+                            <span class="text-gray-400">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if dept_status.upload %}
+                            <a href="{{ url_for('view_upload', upload_id=dept_status.upload.UploadID) }}" 
+                               class="bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition text-sm">
+                                <i class="fas fa-eye mr-1"></i> View
+                            </a>
+                            {% else %}
+                            <span class="px-3 py-1 bg-gray-100 text-gray-500 rounded-lg text-sm">
+                                <i class="fas fa-ban mr-1"></i> No Upload
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+function exportToExcel() {
+    const table = document.querySelector('table');
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.table_to_sheet(table);
+    
+    XLSX.utils.book_append_sheet(wb, ws, 'MIS Tracking');
+    XLSX.writeFile(wb, 'Management_MIS_Tracking_{{ selected_month }}_{{ selected_fy_name }}.xlsx');
+}
+
+function exportToPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('l', 'mm', 'a4');
+    
+    doc.setFontSize(18);
+    doc.text('Management MIS Tracking Dashboard', 14, 15);
+    doc.setFontSize(11);
+    doc.text('{{ ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][selected_month|int] }} {{ selected_fy_name }}', 14, 22);
+    
+    const tableData = [];
+    const rows = document.querySelectorAll('table tbody tr');
+    
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length > 0) {
+            tableData.push([
+                cells[0].textContent.trim(),
+                cells[1].textContent.trim(),
+                cells[2].textContent.trim(),
+                cells[3].textContent.trim(),
+                cells[4].textContent.trim(),
+                cells[5].textContent.trim(),
+                cells[6].textContent.trim()
+            ]);
+        }
+    });
+    
+    doc.autoTable({
+        head: [['Department', 'HOD Name', 'MIS Code', 'Submission', 'Upload Date', 'Supervisor', 'Status']],
+        body: tableData,
+        startY: 28,
+        theme: 'grid',
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [59, 130, 246] }
+    });
+    
+    doc.save('Management_MIS_Tracking_{{ selected_month }}_{{ selected_fy_name }}.pdf');
+}
+</script>
+{% endblock %}

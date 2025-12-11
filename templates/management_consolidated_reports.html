@@ -1,0 +1,424 @@
+
+{% extends "base.html" %}
+
+{% block title %}Consolidated MIS Dashboard - Management{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+        <h2 class="text-4xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-chart-line text-blue-600"></i> Individual MIS Reports Dashboard
+        </h2>
+        <p class="text-gray-600">Interactive analytics and individual department MIS reports overview</p>
+    </div>
+
+    <!-- Download and Filter Section -->
+    <div class="card p-6 mb-8">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-gray-800">
+                <i class="fas fa-filter text-blue-600 mr-2"></i> Filter Reports by Period
+            </h3>
+            <a href="{{ url_for('download_individual_dashboard_excel') }}?fy_id={{ selected_fy }}&month_id={{ selected_month }}&status={{ selected_status }}" class="btn bg-green-600 text-white hover:bg-green-700 px-6 py-2">
+                <i class="fas fa-file-excel mr-2"></i> Export to Excel
+            </a>
+        </div>
+        <form method="GET" action="{{ url_for('management_consolidated_reports') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-gray-700 font-semibold mb-2">
+                    <i class="fas fa-calendar-alt mr-1"></i> Financial Year
+                </label>
+                <select name="fy_id" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Years</option>
+                    {% for fy in financial_years %}
+                    <option value="{{ fy.FYID }}" {% if selected_fy == fy.FYID|string %}selected{% endif %}>
+                        {{ fy.FYName }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-gray-700 font-semibold mb-2">
+                    <i class="fas fa-calendar mr-1"></i> Month
+                </label>
+                <select name="month_id" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Months</option>
+                    {% for i in range(1, 13) %}
+                    <option value="{{ i }}" {% if selected_month == i|string %}selected{% endif %}>
+                        {{ ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][i] }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-gray-700 font-semibold mb-2">
+                    <i class="fas fa-flag mr-1"></i> Status
+                </label>
+                <select name="status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Statuses</option>
+                    <option value="In Review" {% if selected_status == 'In Review' %}selected{% endif %}>In Review</option>
+                    <option value="Approved" {% if selected_status == 'Approved' %}selected{% endif %}>Approved</option>
+                    <option value="Rejected" {% if selected_status == 'Rejected' %}selected{% endif %}>Rejected</option>
+                </select>
+            </div>
+
+            <div class="flex items-end gap-2">
+                <button type="submit" class="flex-1 btn btn-primary py-2">
+                    <i class="fas fa-search mr-2"></i> Apply
+                </button>
+                <a href="{{ url_for('management_consolidated_reports') }}" class="btn bg-gray-500 text-white hover:bg-gray-600 py-2 px-4" title="Clear all filters">
+                    <i class="fas fa-redo"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Individual Department MIS Reports Section -->
+    <div class="card p-6 mb-8">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-2xl font-bold text-gray-800">
+                <i class="fas fa-file-alt text-blue-600 mr-2"></i> Individual Department MIS Reports
+            </h3>
+            <span class="badge" style="background-color: #dbeafe; color: #1e40af; font-size: 1rem; padding: 0.5rem 1rem;">
+                {{ individual_reports|length }} Individual Reports
+            </span>
+        </div>
+
+        {% if individual_reports %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead>
+                    <tr class="bg-gray-100 border-b-2 border-gray-300">
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">MIS Code</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Department</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Month</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Financial Year</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Uploaded By</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Upload Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for upload in individual_reports %}
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-mono font-bold text-blue-600">{{ upload.UploadCode }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ upload.department.DeptName }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                            {{ ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][upload.MonthID] }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ upload.financial_year.FYName }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ upload.uploader.Username or upload.uploader.EmpID }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ upload.UploadDate.strftime('%d %b %Y') }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if upload.Status == 'In Review' %}
+                            <span class="badge badge-pending">
+                                <i class="fas fa-clock mr-1"></i> In Review
+                            </span>
+                            {% elif upload.Status == 'Approved' %}
+                            <span class="badge badge-approved">
+                                <i class="fas fa-check mr-1"></i> Approved
+                            </span>
+                            {% else %}
+                            <span class="badge badge-rejected">
+                                <i class="fas fa-times mr-1"></i> Rejected
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <div class="flex gap-2">
+                                <a href="{{ url_for('view_upload', upload_id=upload.UploadID) }}" class="text-blue-600 hover:text-blue-800 font-medium">
+                                    <i class="fas fa-eye mr-1"></i> View
+                                </a>
+                                <a href="{{ url_for('download_upload', upload_id=upload.UploadID) }}" class="text-green-600 hover:text-green-800 font-medium">
+                                    <i class="fas fa-download mr-1"></i> Download
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-16">
+            <i class="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
+            <p class="text-gray-500 text-lg">No individual MIS reports found matching your filters.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <!-- Total Individual Reports Card -->
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100 text-sm font-medium mb-1">Total Individual Reports</p>
+                    <h3 class="text-4xl font-bold">{{ stats.total_reports }}</h3>
+                </div>
+                <div class="bg-blue-400 bg-opacity-30 rounded-full p-4">
+                    <i class="fas fa-file-alt text-3xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Review Card -->
+        <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-orange-100 text-sm font-medium mb-1">Pending Review</p>
+                    <h3 class="text-4xl font-bold">{{ stats.pending_count }}</h3>
+                </div>
+                <div class="bg-orange-400 bg-opacity-30 rounded-full p-4">
+                    <i class="fas fa-clock text-3xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Approved Card -->
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100 text-sm font-medium mb-1">Approved</p>
+                    <h3 class="text-4xl font-bold">{{ stats.approved_count }}</h3>
+                </div>
+                <div class="bg-green-400 bg-opacity-30 rounded-full p-4">
+                    <i class="fas fa-check-circle text-3xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rejected Card -->
+        <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-red-100 text-sm font-medium mb-1">Rejected</p>
+                    <h3 class="text-4xl font-bold">{{ stats.rejected_count }}</h3>
+                </div>
+                <div class="bg-red-400 bg-opacity-30 rounded-full p-4">
+                    <i class="fas fa-times-circle text-3xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section - Compact Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+        <!-- Status Distribution Pie Chart -->
+        <div class="card p-3">
+            <h3 class="text-sm font-bold mb-2 text-gray-800">
+                <i class="fas fa-chart-pie text-purple-600 mr-1"></i> Status Distribution
+            </h3>
+            <div style="height: 150px;">
+                <canvas id="statusPieChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Monthly Trend Line Chart -->
+        <div class="card p-3 lg:col-span-2">
+            <h3 class="text-sm font-bold mb-2 text-gray-800">
+                <i class="fas fa-chart-line text-blue-600 mr-1"></i> Monthly Submission Trends
+            </h3>
+            <div style="height: 150px;">
+                <canvas id="monthlyTrendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Approval Rate Progress Bar - Compact -->
+    <div class="card p-2 mb-4">
+        <div class="flex items-center justify-between mb-1">
+            <h3 class="text-sm font-bold text-gray-800">
+                <i class="fas fa-percentage text-green-600 mr-1"></i> Approval Rate
+            </h3>
+            <span class="text-sm font-bold text-green-600" id="approvalRateText">0%</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-3">
+            <div id="approvalRateBar" class="bg-gradient-to-r from-green-500 to-green-600 h-3 rounded-full transition-all duration-1000" style="width: 0%">
+            </div>
+        </div>
+    </div>
+
+    <!-- Historical Overview Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6"></div>
+        <!-- Reports by Month -->
+        <div class="card p-4">
+            <h3 class="text-lg font-bold mb-3 text-gray-800">
+                <i class="fas fa-calendar-alt text-purple-600 mr-2"></i> Monthly Distribution
+            </h3>
+            <div class="grid grid-cols-4 md:grid-cols-6 gap-2">
+                {% set month_names = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] %}
+                {% for i in range(1, 13) %}
+                {% set month_count = individual_reports|selectattr('MonthID', 'equalto', i)|list|length %}
+                <div class="text-center p-2 rounded {% if month_count > 0 %}bg-purple-50 border border-purple-200 cursor-pointer hover:bg-purple-100{% else %}bg-gray-50 border border-gray-200{% endif %}" 
+                     {% if month_count > 0 %}onclick="window.location.href='{{ url_for('management_individual_detail_month', month_id=i) }}'"{% endif %}>
+                    <div class="text-xs font-semibold text-gray-600">{{ month_names[i] }}</div>
+                    <div class="text-lg font-bold {% if month_count > 0 %}text-purple-600{% else %}text-gray-400{% endif %}">{{ month_count }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Reports by Financial Year -->
+        <div class="card p-4">
+            <h3 class="text-lg font-bold mb-3 text-gray-800">
+                <i class="fas fa-chart-pie text-blue-600 mr-2"></i> By Financial Year
+            </h3>
+            <div class="space-y-2">
+                {% for fy in financial_years %}
+                {% set fy_count = individual_reports|selectattr('FYID', 'equalto', fy.FYID)|list|length %}
+                {% set fy_pending = individual_reports|selectattr('FYID', 'equalto', fy.FYID)|selectattr('Status', 'equalto', 'In Review')|list|length %}
+                {% set fy_approved = individual_reports|selectattr('FYID', 'equalto', fy.FYID)|selectattr('Status', 'equalto', 'Approved')|list|length %}
+                <div class="flex items-center justify-between p-2 rounded {% if fy.ActiveFlag %}bg-blue-50 border border-blue-200{% else %}bg-gray-50 border border-gray-200{% endif %} cursor-pointer hover:bg-blue-100"
+                     onclick="window.location.href='{{ url_for('management_individual_detail_fy', fy_id=fy.FYID) }}'">
+                    <div>
+                        <div class="font-semibold text-gray-800">{{ fy.FYName }} {% if fy.ActiveFlag %}<span class="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full ml-2">Active</span>{% endif %}</div>
+                        <div class="text-xs text-gray-600">{{ fy_approved }} Approved, {{ fy_pending }} Pending</div>
+                    </div>
+                    <div class="text-2xl font-bold text-purple-600">{{ fy_count }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    </div>
+</div>
+
+<!-- Chart.js Library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+<script>
+// Data from backend - based on individual reports
+const pendingCount = {{ stats.pending_count }};
+const approvedCount = {{ stats.approved_count }};
+const rejectedCount = {{ stats.rejected_count }};
+const totalCount = {{ stats.total_reports }};
+
+// Calculate approval rate
+const approvalRate = totalCount > 0 ? Math.round((approvedCount / totalCount) * 100) : 0;
+
+// Animate approval rate bar
+setTimeout(() => {
+    document.getElementById('approvalRateBar').style.width = approvalRate + '%';
+    document.getElementById('approvalRateText').textContent = approvalRate + '%';
+}, 100);
+
+// Status Distribution Pie Chart
+const statusCtx = document.getElementById('statusPieChart').getContext('2d');
+new Chart(statusCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Pending Review', 'Approved', 'Rejected'],
+        datasets: [{
+            data: [pendingCount, approvedCount, rejectedCount],
+            backgroundColor: [
+                'rgba(249, 115, 22, 0.8)',
+                'rgba(34, 197, 94, 0.8)',
+                'rgba(239, 68, 68, 0.8)'
+            ],
+            borderColor: [
+                'rgba(249, 115, 22, 1)',
+                'rgba(34, 197, 94, 1)',
+                'rgba(239, 68, 68, 1)'
+            ],
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    padding: 4,
+                    font: {
+                        size: 9,
+                        weight: 'bold'
+                    },
+                    boxWidth: 10
+                }
+            }
+        }
+    }
+});
+
+// Monthly Trend Chart
+const monthlyData = {{ chart_data | tojson }};
+const monthCounts = {};
+const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+monthNames.forEach(month => {
+    monthCounts[month] = 0;
+});
+
+monthlyData.forEach(report => {
+    const monthIndex = report.MonthID - 1;
+    const monthName = monthNames[monthIndex];
+    monthCounts[monthName] = (monthCounts[monthName] || 0) + 1;
+});
+
+const monthlyCtx = document.getElementById('monthlyTrendChart').getContext('2d');
+new Chart(monthlyCtx, {
+    type: 'line',
+    data: {
+        labels: monthNames,
+        datasets: [{
+            label: 'MIS Submissions',
+            data: Object.values(monthCounts),
+            borderColor: 'rgba(59, 130, 246, 1)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 1,
+            pointRadius: 2,
+            pointHoverRadius: 4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: true,
+                position: 'bottom',
+                labels: {
+                    padding: 4,
+                    font: {
+                        size: 9,
+                        weight: 'bold'
+                    },
+                    boxWidth: 10
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1,
+                    font: {
+                        size: 8
+                    }
+                }
+            },
+            x: {
+                ticks: {
+                    font: {
+                        size: 8,
+                        weight: 'bold'
+                    }
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,156 @@
+
+{% extends "base.html" %}
+
+{% block title %}MIS Upload - MIS {% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <h2 class="text-3xl font-bold mb-6">Monthly MIS Upload</h2>
+    
+    <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+        {% if hod_blocked_message %}
+        <div class="mb-4 p-4 rounded bg-red-100 text-red-700 border-l-4 border-red-500">
+            <p class="font-bold">
+                <i class="fas fa-lock mr-2"></i>Upload Blocked
+            </p>
+            <p class="mt-2">{{ hod_blocked_message }}</p>
+        </div>
+        {% else %}
+        <div class="mb-4 p-4 rounded {% if upload_allowed %}bg-green-100 text-green-700{% else %}bg-yellow-100 text-yellow-700{% endif %}">
+            <p class="font-bold">{{ upload_message }}</p>
+            <p class="text-sm">Current Date: {{ current_date }}</p>
+        </div>
+        {% endif %}
+        
+        {% if upload_allowed and not hod_blocked_message %}
+        <div class="mb-4 p-4 bg-blue-50 rounded border border-blue-200">
+            <h4 class="font-bold text-blue-800 mb-2">📥 Download MIS Template</h4>
+            <p class="text-sm text-gray-600 mb-2">Download the template for your department before uploading data.</p>
+            <a href="{{ url_for('download_template', dept_id=current_user.DepartmentID) }}" 
+               class="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                Download Template
+            </a>
+        </div>
+        
+        <form method="POST" action="{{ url_for('upload_mis') }}" enctype="multipart/form-data">
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Department</label>
+                <select name="department_id" required class="w-full px-3 py-2 border rounded" {% if current_user.role.RoleName == 'HOD' %}disabled{% endif %}>
+                    {% for dept in departments %}
+                    {% if dept.ActiveFlag %}
+                    <option value="{{ dept.DeptID }}" {% if dept.DeptID == current_user.DepartmentID %}selected{% endif %}>
+                        {{ dept.DeptName }}
+                    </option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+                {% if current_user.role.RoleName == 'HOD' %}
+                <input type="hidden" name="department_id" value="{{ current_user.DepartmentID }}">
+                {% endif %}
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Month</label>
+                
+                {% if current_user.role.RoleName == 'HOD' %}
+                <!-- HOD: Show current month as static display -->
+                <div class="w-full px-3 py-2 border rounded bg-gray-100">
+                    <span class="text-gray-700 font-semibold">
+                        {% set month_names_list = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] %}
+                        {{ month_names_list[current_date.split('-')[1]|int] }} (Current Month)
+                    </span>
+                </div>
+                <input type="hidden" name="month_id" value="{{ current_date.split('-')[1]|int }}">
+                {% else %}
+                <!-- Admin/Other: Show full month dropdown -->
+                <select name="month_id" required class="w-full px-3 py-2 border rounded">
+                    <option value="">Select Month</option>
+                    <option value="1" {% if current_date.split('-')[1] == '01' %}selected{% endif %}>January</option>
+                    <option value="2" {% if current_date.split('-')[1] == '02' %}selected{% endif %}>February</option>
+                    <option value="3" {% if current_date.split('-')[1] == '03' %}selected{% endif %}>March</option>
+                    <option value="4" {% if current_date.split('-')[1] == '04' %}selected{% endif %}>April</option>
+                    <option value="5" {% if current_date.split('-')[1] == '05' %}selected{% endif %}>May</option>
+                    <option value="6" {% if current_date.split('-')[1] == '06' %}selected{% endif %}>June</option>
+                    <option value="7" {% if current_date.split('-')[1] == '07' %}selected{% endif %}>July</option>
+                    <option value="8" {% if current_date.split('-')[1] == '08' %}selected{% endif %}>August</option>
+                    <option value="9" {% if current_date.split('-')[1] == '09' %}selected{% endif %}>September</option>
+                    <option value="10" {% if current_date.split('-')[1] == '10' %}selected{% endif %}>October</option>
+                    <option value="11" {% if current_date.split('-')[1] == '11' %}selected{% endif %}>November</option>
+                    <option value="12" {% if current_date.split('-')[1] == '12' %}selected{% endif %}>December</option>
+                </select>
+                {% endif %}
+                <p class="text-sm text-gray-600 mt-1">
+                    {% if current_user.role.RoleName == 'HOD' %}
+                    You can only upload data for the current month during the upload window.
+                    {% else %}
+                    You can upload data for any month.
+                    {% endif %}
+                </p>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Financial Year</label>
+                <select name="fy_id" required class="w-full px-3 py-2 border rounded">
+                    {% for fy in financial_years %}
+                    <option value="{{ fy.FYID }}" {% if fy.ActiveFlag %}selected{% endif %}>{{ fy.FYName }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Upload File (.xls or .xlsx only)</label>
+                <input type="file" name="file" accept=".xls,.xlsx" required class="w-full px-3 py-2 border rounded">
+            </div>
+            
+            <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Upload MIS</button>
+        </form>
+        {% endif %}
+    </div>
+    
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h3 class="text-xl font-bold mb-4">Upload History</h3>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="px-4 py-2 text-left">MIS Code</th>
+                        <th class="px-4 py-2 text-left">Department</th>
+                        <th class="px-4 py-2 text-left">Month</th>
+                        <th class="px-4 py-2 text-left">FY</th>
+                        <th class="px-4 py-2 text-left">Date</th>
+                        <th class="px-4 py-2 text-left">File Check</th>
+                        <th class="px-4 py-2 text-left">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for upload in uploads %}
+                    <tr class="border-b">
+                        <td class="px-4 py-2 font-mono font-bold text-blue-600">{{ upload.UploadCode }}</td>
+                        <td class="px-4 py-2">{{ upload.department.DeptName }}</td>
+                        <td class="px-4 py-2">{{ ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][upload.MonthID] }}</td>
+                        <td class="px-4 py-2">{{ upload.financial_year.FYName }}</td>
+                        <td class="px-4 py-2">{{ upload.UploadDate.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td class="px-4 py-2">
+                            <span class="px-2 py-1 rounded text-sm {% if upload.FileCheck == 'Validated' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+                                {{ '✓ ' if upload.FileCheck == 'Validated' else '✗ ' }}{{ upload.FileCheck }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-2">
+                            {% if upload.IsCancelled %}
+                            <span class="px-2 py-1 rounded text-sm bg-red-100 text-red-700">
+                                Cancelled
+                            </span>
+                            {% else %}
+                            <span class="px-2 py-1 rounded text-sm {% if upload.Status == 'In Review' %}bg-yellow-100 text-yellow-700{% elif upload.Status == 'Approved' %}bg-blue-100 text-blue-700{% else %}bg-red-100 text-red-700{% endif %}">
+                                {{ upload.Status }}
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

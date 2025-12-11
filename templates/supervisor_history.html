@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}Supervisor History - MIS{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="mb-8 flex justify-between items-start">
+        <div>
+            <h2 class="text-4xl font-bold text-gray-800 mb-2">
+                <i class="fas fa-history text-blue-600"></i> Approval History
+            </h2>
+            <p class="text-gray-600">Track all HOD MIS uploads and Consolidated MIS with status</p>
+        </div>
+        <a href="{{ url_for('supervisor_uploads') }}" class="btn bg-indigo-600 text-white hover:bg-indigo-700 px-6 py-3">
+            <i class="fas fa-arrow-left mr-2"></i> Back to Pending Queue
+        </a>
+    </div>
+    
+    <!-- Consolidated MIS Status Section -->
+    <div class="card p-6 mb-8">
+        <h3 class="text-2xl font-bold mb-4 flex items-center gap-2">
+            <i class="fas fa-layer-group text-purple-600"></i> Consolidated MIS Status
+        </h3>
+        
+        {% if pending_consolidated or approved_consolidated or rejected_consolidated %}
+        <div class="space-y-4">
+            <!-- Pending Consolidated MIS -->
+            {% for consolidated in pending_consolidated %}
+            <div class="border border-orange-200 bg-orange-50 rounded-lg p-4">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex-1">
+                        <h4 class="font-bold text-lg text-gray-800">
+                            Consolidated MIS - {{ ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][consolidated.MonthID] }} {{ consolidated.financial_year.FYName }}
+                        </h4>
+                        <p class="text-sm text-gray-600">
+                            <i class="fas fa-user mr-1"></i> Prepared by: {{ consolidated.supervisor.Username }}
+                            <i class="fas fa-calendar ml-3 mr-1"></i> {{ consolidated.CreatedDate.strftime('%d %b %Y %H:%M') }}
+                        </p>
+                    </div>
+                    <div class="flex gap-2">
+                        <span class="badge" style="background-color: #fed7aa; color: #92400e;">
+                            <i class="fas fa-hourglass-half mr-1"></i> Pending Review
+                        </span>
+                        <a href="{{ url_for('view_supervisor_consolidated_mis', consolidated_id=consolidated.ConsolidatedMISID) }}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium">
+                            <i class="fas fa-eye mr-2"></i> View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            
+            <!-- Approved Consolidated MIS -->
+            {% for consolidated in approved_consolidated %}
+            <div class="border border-green-200 bg-green-50 rounded-lg p-4">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex-1">
+                        <h4 class="font-bold text-lg text-gray-800">
+                            Consolidated MIS - {{ ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][consolidated.MonthID] }} {{ consolidated.financial_year.FYName }}
+                        </h4>
+                        <p class="text-sm text-gray-600">
+                            <i class="fas fa-user mr-1"></i> Prepared by: {{ consolidated.supervisor.Username }}
+                            <i class="fas fa-check-circle mr-2 text-green-600"></i> Approved by: Management
+                            <i class="fas fa-calendar ml-3 mr-1"></i> {{ consolidated.ApprovedDate.strftime('%d %b %Y %H:%M') if consolidated.ApprovedDate else 'N/A' }}
+                        </p>
+                    </div>
+                    <div class="flex gap-2">
+                        <span class="badge badge-approved">
+                            <i class="fas fa-check mr-1"></i> Approved
+                        </span>
+                        <a href="{{ url_for('view_supervisor_consolidated_mis', consolidated_id=consolidated.ConsolidatedMISID) }}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium">
+                            <i class="fas fa-eye mr-2"></i> View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            
+            <!-- Rejected Consolidated MIS -->
+            {% for consolidated in rejected_consolidated %}
+            <div class="border border-red-200 bg-red-50 rounded-lg p-4">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex-1">
+                        <h4 class="font-bold text-lg text-gray-800">
+                            Consolidated MIS - {{ ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][consolidated.MonthID] }} {{ consolidated.financial_year.FYName }}
+                        </h4>
+                        <p class="text-sm text-gray-600">
+                            <i class="fas fa-user mr-1"></i> Prepared by: {{ consolidated.supervisor.Username }}
+                            <i class="fas fa-times-circle mr-2 text-red-600"></i> Rejected by: Management
+                            <i class="fas fa-calendar ml-3 mr-1"></i> {{ consolidated.ApprovedDate.strftime('%d %b %Y %H:%M') if consolidated.ApprovedDate else 'N/A' }}
+                        </p>
+                    </div>
+                    <div class="flex gap-2">
+                        <span class="badge badge-rejected">
+                            <i class="fas fa-times mr-1"></i> Rejected
+                        </span>
+                        <a href="{{ url_for('view_supervisor_consolidated_mis', consolidated_id=consolidated.ConsolidatedMISID) }}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium">
+                            <i class="fas fa-eye mr-2"></i> View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-8 text-gray-500">
+            <i class="fas fa-layer-group text-4xl mb-2 text-gray-300"></i>
+            <p>No consolidated MIS records yet.</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Approved Uploads Section -->
+    <div class="card p-6 mb-8">
+        <h3 class="text-2xl font-bold mb-4 flex items-center gap-2">
+            <i class="fas fa-check-circle text-green-600"></i> Approved Uploads ({{ approved_uploads|length }})
+        </h3>
+        
+        {% if approved_uploads %}
+        <div class="space-y-4">
+            {% for upload in approved_uploads %}
+            <div class="border border-green-200 bg-green-50 rounded-lg p-4 hover:shadow-md transition">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-3 mb-2">
+                            <i class="fas fa-file-excel text-green-600 text-2xl"></i>
+                            <div>
+                                <h4 class="font-bold text-lg text-gray-800">
+                                    <span class="text-green-600 font-mono">{{ upload.UploadCode }}</span> - {{ upload.department.DeptName }} - {{ ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][upload.MonthID] }} {{ upload.financial_year.FYName }}
+                                </h4>
+                                <p class="text-sm text-gray-600">
+                                    <i class="fas fa-user mr-1"></i> Uploaded by: {{ upload.uploader.Username }}
+                                    <i class="fas fa-calendar ml-3 mr-1"></i> {{ upload.UploadDate.strftime('%d %b %Y %H:%M') }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 mt-2 flex-wrap">
+                            <span class="badge badge-approved">
+                                <i class="fas fa-check mr-1"></i> Approved by Supervisor
+                            </span>
+                            <span class="badge" style="background-color: #d1fae5; color: #065f46;">
+                                <i class="fas fa-calendar mr-1"></i> {{ upload.SupervisorApprovedDate.strftime('%d %b %Y %H:%M') }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <a href="{{ url_for('view_hod_upload', upload_id=upload.UploadID) }}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium">
+                        <i class="fas fa-eye mr-2"></i> View Details
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-12 text-gray-500">
+            <i class="fas fa-check-circle text-6xl mb-4 text-gray-300"></i>
+            <h3 class="text-2xl font-bold mb-2">No Approved Uploads Yet</h3>
+            <p>Approved uploads will appear here.</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Rejected Uploads Section -->
+    <div class="card p-6">
+        <h3 class="text-2xl font-bold mb-4 flex items-center gap-2">
+            <i class="fas fa-times-circle text-red-600"></i> Rejected Uploads ({{ rejected_uploads|length }})
+        </h3>
+        
+        {% if rejected_uploads %}
+        <div class="space-y-4">
+            {% for upload in rejected_uploads %}
+            <div class="border border-red-200 bg-red-50 rounded-lg p-4 hover:shadow-md transition">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-3 mb-2">
+                            <i class="fas fa-file-excel text-red-600 text-2xl"></i>
+                            <div>
+                                <h4 class="font-bold text-lg text-gray-800">
+                                    <span class="text-red-600 font-mono">{{ upload.UploadCode }}</span> - {{ upload.department.DeptName }} - {{ ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][upload.MonthID] }} {{ upload.financial_year.FYName }}
+                                </h4>
+                                <p class="text-sm text-gray-600">
+                                    <i class="fas fa-user mr-1"></i> Uploaded by: {{ upload.uploader.Username }}
+                                    <i class="fas fa-calendar ml-3 mr-1"></i> {{ upload.UploadDate.strftime('%d %b %Y %H:%M') }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 mt-2 flex-wrap">
+                            <span class="badge badge-rejected">
+                                <i class="fas fa-times mr-1"></i> Rejected
+                            </span>
+                            <span class="badge" style="background-color: #fee2e2; color: #7f1d1d;">
+                                <i class="fas fa-calendar mr-1"></i> {{ upload.UploadDate.strftime('%d %b %Y %H:%M') }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <a href="{{ url_for('view_hod_upload', upload_id=upload.UploadID) }}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium">
+                        <i class="fas fa-eye mr-2"></i> View Details
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-12 text-gray-500">
+            <i class="fas fa-times-circle text-6xl mb-4 text-gray-300"></i>
+            <h3 class="text-2xl font-bold mb-2">No Rejected Uploads</h3>
+            <p>Rejected uploads will appear here.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

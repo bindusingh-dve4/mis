@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Reports & Analytics - MIS {% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="mb-8">
+        <h2 class="text-4xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-chart-bar text-blue-600"></i> Reports & Analytics
+        </h2>
+        <p class="text-gray-600">View, filter, and download MIS reports</p>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="card p-6 mb-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold flex items-center gap-2">
+                <i class="fas fa-filter text-blue-600"></i> Filter & Search Reports
+            </h3>
+            <a href="{{ url_for('download_reports_excel') }}?department={{ selected_department }}&fy={{ selected_fy }}&status={{ selected_status }}&search_code={{ search_code }}" class="btn bg-green-600 text-white hover:bg-green-700 px-6 py-2">
+                <i class="fas fa-file-excel mr-2"></i> Export to Excel
+            </a>
+        </div>
+        
+        <!-- Search by MIS Code -->
+        <div class="mb-4">
+            <form method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="form-label">Search by MIS Code</label>
+                    <input type="text" name="search_code" placeholder="e.g., MISFIN000001" class="form-input" value="{{ search_code }}">
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="btn btn-primary w-full">
+                        <i class="fas fa-search mr-2"></i> Search Code
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        {% if not search_code %}
+        <!-- Advanced Filters (Hidden when searching by code) -->
+        <form method="GET" class="grid grid-cols-1 {% if user_role == 'HOD' %}md:grid-cols-3{% else %}md:grid-cols-4{% endif %} gap-4">
+            <!-- Department filter - only for Admin and Management -->
+            {% if user_role != 'HOD' %}
+            <div>
+                <label class="form-label">Department</label>
+                <select name="department" class="form-input">
+                    <option value="">All Departments</option>
+                    {% for dept in departments %}
+                    <option value="{{ dept.DeptID }}" {% if selected_department|int == dept.DeptID %}selected{% endif %}>{{ dept.DeptName }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            
+            <div>
+                <label class="form-label">Financial Year</label>
+                <select name="fy" class="form-input">
+                    <option value="">All FY</option>
+                    {% for fy in financial_years %}
+                    <option value="{{ fy.FYID }}" {% if selected_fy|int == fy.FYID %}selected{% endif %}>{{ fy.FYName }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="form-label">Status</label>
+                <select name="status" class="form-input">
+                    <option value="">All Status</option>
+                    <option value="In Review" {% if selected_status == 'In Review' %}selected{% endif %}>In Review</option>
+                    <option value="Approved" {% if selected_status == 'Approved' %}selected{% endif %}>Approved</option>
+                    <option value="Rejected" {% if selected_status == 'Rejected' %}selected{% endif %}>Rejected</option>
+                </select>
+            </div>
+            <div class="flex items-end">
+                <button type="submit" class="btn btn-primary w-full">
+                    <i class="fas fa-search mr-2"></i> Apply Filters
+                </button>
+            </div>
+        </form>
+        {% endif %}
+    </div>
+
+    <!-- Reports Table -->
+    <div class="card p-6">
+        <h3 class="text-2xl font-bold mb-4 flex items-center gap-2">
+            <i class="fas fa-table text-blue-600"></i> MIS Upload Reports
+        </h3>
+        
+      
+        <div class="overflow-x-auto">
+            <table class="table-modern">
+                <thead>
+                    <tr>
+                        <th>MIS Code</th>
+                        <th>Upload ID</th>
+                        <th>Department</th>
+                        <th>Month</th>
+                        <th>Financial Year</th>
+                        <th>Uploaded By</th>
+                        <th>Upload Date</th>
+                        <th>File Check</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for upload in uploads %}
+                    <tr>
+                        <td class="font-mono font-bold text-blue-600">{{ upload.UploadCode }}</td>
+                        <td class="font-mono">#{{ upload.UploadID }}</td>
+                        <td>
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-building text-gray-400"></i>
+                                {{ upload.department.DeptName }}
+                            </div>
+                        </td>
+                        <td>{{ ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][upload.MonthID] }}</td>
+                        <td>{{ upload.financial_year.FYName }}</td>
+                        <td>
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-user text-gray-400"></i>
+                                {{ upload.uploader.Username }}
+                            </div>
+                        </td>
+                        <td>{{ upload.UploadDate.strftime('%d %b %Y %H:%M') }}</td>
+                        <td class="px-4 py-3">
+                            <span class="badge {% if upload.FileCheck == 'Validated' %}badge-validated{% else %}badge-rejected{% endif %}">
+                                {% if upload.FileCheck == 'Validated' %}
+                                    <i class="fas fa-check mr-1"></i>
+                                {% else %}
+                                    <i class="fas fa-times mr-1"></i>
+                                {% endif %}
+                                {{ upload.FileCheck }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="flex items-center gap-2">
+                                {% if upload.Status == 'Rejected' %}
+                                <span class="badge badge-rejected">
+                                    <i class="fas fa-times mr-1"></i> Rejected by Supervisor
+                                </span>
+                                {% elif upload.SupervisorApproved and upload.Status == 'In Review' %}
+                                <span class="badge" style="background-color: #dbeafe; color: #1e40af;">
+                                    <i class="fas fa-check mr-1"></i> Supervisor Approved
+                                </span>
+                                {% elif upload.Status == 'Approved' %}
+                                <span class="badge badge-approved">
+                                    <i class="fas fa-check-double mr-1"></i> Approved
+                                </span>
+                                {% else %}
+                                <span class="badge badge-pending">
+                                    <i class="fas fa-clock mr-1"></i> In Review
+                                </span>
+                                {% endif %}
+                                {% if upload.Status == 'Approved' and upload.uploader.role.RoleName == 'Admin' %}
+                                <span class="badge badge-admin-approved" title="Automatically approved by Admin">
+                                    <i class="fas fa-star mr-1"></i> Admin Auto-Approved
+                                </span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="flex gap-2">
+                                <a href="{{ url_for('download_upload', upload_id=upload.UploadID) }}" 
+                                   class="btn btn-primary text-sm">
+                                    <i class="fas fa-download mr-1"></i> Download
+                                </a>
+                                {% if current_user.role.RoleName == 'Management' and upload.Status == 'In Review' %}
+                                <a href="{{ url_for('view_upload', upload_id=upload.UploadID) }}" 
+                                   class="btn btn-info text-sm">
+                                    <i class="fas fa-eye mr-1"></i> View Details
+                                </a>
+                                {% endif %}
+                                {% if current_user.role.RoleName == 'Admin' %}
+                                    {% if upload.Status == 'In Review' %}
+                                    <a href="{{ url_for('edit_upload', upload_id=upload.UploadID) }}" class="btn btn-primary text-sm">
+                                        <i class="fas fa-edit mr-1"></i> Modify
+                                    </a>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-8 text-gray-500">
+                            <i class="fas fa-inbox text-4xl mb-2"></i>
+                            <p>No reports found</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

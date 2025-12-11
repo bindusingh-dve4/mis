@@ -1,0 +1,294 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIS Report - {{ upload.UploadCode }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%);
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.95;
+        }
+        
+        .mis-code {
+            background: rgba(255,255,255,0.2);
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            margin-top: 10px;
+            font-size: 1.1em;
+        }
+        
+        .info-section {
+            background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%);
+            padding: 30px 40px;
+            border-left: 5px solid #3B82F6;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        
+        .info-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .info-label {
+            font-weight: bold;
+            color: #3B82F6;
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .info-value {
+            color: #333;
+            font-size: 1.1em;
+        }
+        
+        .content-section {
+            padding: 40px;
+        }
+        
+        .section-title {
+            color: #3B82F6;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #3B82F6;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .data-table thead {
+            background: linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%);
+            color: white;
+        }
+        
+        .data-table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            letter-spacing: 0.5px;
+        }
+        
+        .data-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .data-table tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        .data-table tbody tr:hover {
+            background-color: #DBEAFE;
+            transition: background-color 0.3s ease;
+        }
+        
+        .footer {
+            background: #f8f9fa;
+            padding: 30px 40px;
+            text-align: center;
+            color: #666;
+            border-top: 3px solid #3B82F6;
+        }
+        
+        .footer p {
+            margin: 10px 0;
+        }
+        
+        .footer strong {
+            color: #3B82F6;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        
+        .badge-approved {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        .badge-review {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        
+        .badge-rejected {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .badge-validated {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .container {
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 MIS Report</h1>
+            <p>{{ upload.department.DeptName }} - {{ month_name }} {{ upload.financial_year.FYName }}</p>
+            <div class="mis-code">{{ upload.UploadCode }}</div>
+        </div>
+        
+        <div class="info-section">
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">MIS Code</span>
+                    <span class="info-value">{{ upload.UploadCode }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Department</span>
+                    <span class="info-value">{{ upload.department.DeptName }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Month</span>
+                    <span class="info-value">{{ month_name }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Financial Year</span>
+                    <span class="info-value">{{ upload.financial_year.FYName }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Uploaded By</span>
+                    <span class="info-value">{{ upload.uploader.Username or upload.uploader.EmpID }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Upload Date</span>
+                    <span class="info-value">{{ upload.UploadDate.strftime('%d %b %Y %H:%M') }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">File Check</span>
+                    <span class="info-value">
+                        {% if upload.FileCheck == 'Validated' %}
+                        <span class="badge badge-validated">✓ {{ upload.FileCheck }}</span>
+                        {% else %}
+                        <span class="badge badge-rejected">✗ {{ upload.FileCheck }}</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Status</span>
+                    <span class="info-value">
+                        {% if upload.Status == 'Approved' %}
+                        <span class="badge badge-approved">✓ {{ upload.Status }}</span>
+                        {% elif upload.Status == 'In Review' %}
+                        <span class="badge badge-review">⏱ {{ upload.Status }}</span>
+                        {% else %}
+                        <span class="badge badge-rejected">✗ {{ upload.Status }}</span>
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="content-section">
+            <h2 class="section-title">Report Data</h2>
+            
+            {% if headers %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        {% for header in headers %}
+                        <th>{{ header }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    <tr>
+                        {% for cell in row %}
+                        <td>{{ cell }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p style="text-align: center; color: #999; padding: 40px;">No data available in this report.</p>
+            {% endif %}
+        </div>
+        
+        <div class="footer">
+            <p><strong>Generated from MIS System</strong></p>
+            <p>Management Information System</p>
+            <p>Department: {{ upload.department.DeptName }} | {{ month_name }} {{ upload.financial_year.FYName }}</p>
+            <p style="margin-top: 15px; font-size: 0.9em;">Generated on: {{ upload.UploadDate.strftime('%d %B %Y at %H:%M:%S') }}</p>
+        </div>
+    </div>
+</body>
+</html>

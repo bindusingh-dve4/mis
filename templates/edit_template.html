@@ -1,0 +1,42 @@
+
+{% extends "base.html" %}
+
+{% block title %}Edit Template - MIS {% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <h2 class="text-3xl font-bold mb-6">Edit MIS Template</h2>
+    
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <form method="POST" enctype="multipart/form-data">
+            <div class="mb-4">
+                <label class="block text-gray-700 font-bold mb-2">Department</label>
+                <select name="department_id" required class="w-full px-3 py-2 border rounded">
+                    {% for dept in departments %}
+                    {% if dept.ActiveFlag %}
+                    <option value="{{ dept.DeptID }}" {% if dept.DeptID == template.DepartmentID %}selected{% endif %}>{{ dept.DeptName }}</option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-gray-700 font-bold mb-2">Current File</label>
+                <p class="text-gray-600">{{ template.FilePath.split('/')[-1] }}</p>
+                <p class="text-sm text-gray-500">Uploaded: {{ template.UploadDate.strftime('%Y-%m-%d %H:%M') }}</p>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-gray-700 font-bold mb-2">Replace with New Template File (Optional)</label>
+                <input type="file" name="file" accept=".xls,.xlsx" class="w-full px-3 py-2 border rounded">
+                <p class="text-sm text-gray-500">Leave empty to keep current file</p>
+            </div>
+            
+            <div class="flex gap-4">
+                <button type="submit" class="flex-1 bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Update Template</button>
+                <a href="{{ url_for('template_management') }}" class="flex-1 bg-gray-400 text-white py-2 rounded hover:bg-gray-500 text-center">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}Supervisor Upload Review - MIS{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="mb-8 flex justify-between items-start">
+        <div>
+            <h2 class="text-4xl font-bold text-gray-800 mb-2">
+                <i class="fas fa-check-double text-indigo-600"></i> HOD MIS Review & Approval
+            </h2>
+            <p class="text-gray-600">Review and approve HOD MIS uploads (Available Anytime)</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="{{ url_for('supervisor_mis_tracking') }}" class="btn bg-green-600 text-white hover:bg-green-700 px-6 py-3">
+                <i class="fas fa-chart-line mr-2"></i> MIS Tracking
+            </a>
+            <a href="{{ url_for('prepare_consolidated_mis') }}" class="btn bg-purple-600 text-white hover:bg-purple-700 px-6 py-3">
+                <i class="fas fa-layer-group mr-2"></i> Prepare Consolidated MIS
+            </a>
+            <a href="{{ url_for('supervisor_history') }}" class="btn bg-blue-600 text-white hover:bg-blue-700 px-6 py-3">
+                <i class="fas fa-history mr-2"></i> View History
+            </a>
+        </div>
+    </div>
+    
+    <div class="card p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-2xl font-bold flex items-center gap-2">
+                <i class="fas fa-hourglass-half text-orange-600"></i> Pending HOD Uploads ({{ pending_uploads|length }})
+            </h3>
+            <a href="{{ url_for('download_supervisor_uploads_excel') }}" class="btn bg-green-600 text-white hover:bg-green-700 px-6 py-2">
+                <i class="fas fa-file-excel mr-2"></i> Export to Excel
+            </a>
+        </div>
+        
+        {% if pending_uploads %}
+        <div class="space-y-4">
+            {% for upload in pending_uploads %}
+            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-3 mb-2">
+                            <i class="fas fa-file-excel text-green-600 text-2xl"></i>
+                            <div>
+                                <h4 class="font-bold text-lg text-gray-800">
+                                    <span class="text-indigo-600 font-mono">{{ upload.UploadCode }}</span> - {{ upload.department.DeptName }} - {{ ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][upload.MonthID] }} {{ upload.financial_year.FYName }}
+                                </h4>
+                                <p class="text-sm text-gray-600">
+                                    <i class="fas fa-user mr-1"></i> Uploaded by: {{ upload.uploader.Username }}
+                                    <i class="fas fa-calendar ml-3 mr-1"></i> {{ upload.UploadDate.strftime('%d %b %Y %H:%M') }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 mt-2 flex-wrap">
+                            <span class="badge badge-validated">
+                                <i class="fas fa-check mr-1"></i> File: {{ upload.FileCheck }}
+                            </span>
+                            <span class="badge badge-pending">
+                                <i class="fas fa-clock mr-1"></i> {{ upload.Status }}
+                            </span>
+                            {% if upload.IsModified %}
+                            <span class="badge" style="background-color: #dbeafe; color: #1e40af;">
+                                <i class="fas fa-sync mr-1"></i> Modified
+                            </span>
+                            {% endif %}
+                            <a href="{{ url_for('download_upload', upload_id=upload.UploadID) }}" 
+                               class="text-sm text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-download mr-1"></i> Download & Review
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-2 flex-wrap">
+                        <a href="{{ url_for('view_hod_upload', upload_id=upload.UploadID) }}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium">
+                            <i class="fas fa-eye mr-2"></i> View Details
+                        </a>
+                        <form method="POST" action="{{ url_for('approve_hod_upload', upload_id=upload.UploadID) }}" style="display:inline;">
+                            <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-medium">
+                                <i class="fas fa-check mr-2"></i> Approve
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ url_for('reject_hod_upload', upload_id=upload.UploadID) }}" style="display:inline;" onsubmit="return confirm('Are you sure you want to reject this HOD MIS upload?');">
+                            <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition font-medium">
+                                <i class="fas fa-times mr-2"></i> Reject
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-12 text-gray-500">
+            <i class="fas fa-inbox text-6xl mb-4 text-gray-300"></i>
+            <h3 class="text-2xl font-bold mb-2">No Pending Uploads</h3>
+            <p>All HOD MIS uploads have been reviewed.</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Upload History Table - Approved & Rejected by Supervisor -->
+    <div class="card p-6 mt-8">
+        <h3 class="text-2xl font-bold mb-4 flex items-center gap-2">
+            <i class="fas fa-history text-blue-600"></i> Supervisor Approved & Rejected Uploads
+        </h3>
+        
+        {% if approved_by_supervisor or rejected_by_supervisor %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-100 border-b-2 border-gray-300">
+                    <tr>
+                        <th class="px-4 py-3 text-left font-bold text-gray-700">MIS Code</th>
+                        <th class="px-4 py-3 text-left font-bold text-gray-700">Department</th>
+                        <th class="px-4 py-3 text-left font-bold text-gray-700">Month</th>
+                        <th class="px-4 py-3 text-left font-bold text-gray-700">Uploaded By</th>
+                        <th class="px-4 py-3 text-left font-bold text-gray-700">Upload Date</th>
+                        <th class="px-4 py-3 text-left font-bold text-gray-700">Supervisor Decision</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for upload in approved_by_supervisor %}
+                    <tr class="border-b border-gray-200 hover:bg-gray-50 transition">
+                        <td class="px-4 py-3">
+                            <a href="{{ url_for('view_hod_upload', upload_id=upload.UploadID) }}" class="font-mono font-bold text-blue-600 hover:text-blue-800 hover:underline">{{ upload.UploadCode }}</a>
+                        </td>
+                        <td class="px-4 py-3">{{ upload.department.DeptName }}</td>
+                        <td class="px-4 py-3">{{ ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][upload.MonthID] }}</td>
+                        <td class="px-4 py-3">{{ upload.uploader.Username }}</td>
+                        <td class="px-4 py-3 text-sm">{{ upload.UploadDate.strftime('%d %b %Y %H:%M') }}</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 rounded text-sm font-medium bg-blue-100 text-blue-700">
+                                <i class="fas fa-check-circle mr-1"></i> Supervisor Approved
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% for upload in rejected_by_supervisor %}
+                    <tr class="border-b border-gray-200 hover:bg-gray-50 transition">
+                        <td class="px-4 py-3">
+                            <a href="{{ url_for('view_hod_upload', upload_id=upload.UploadID) }}" class="font-mono font-bold text-blue-600 hover:text-blue-800 hover:underline">{{ upload.UploadCode }}</a>
+                        </td>
+                        <td class="px-4 py-3">{{ upload.department.DeptName }}</td>
+                        <td class="px-4 py-3">{{ ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][upload.MonthID] }}</td>
+                        <td class="px-4 py-3">{{ upload.uploader.Username }}</td>
+                        <td class="px-4 py-3 text-sm">{{ upload.UploadDate.strftime('%d %b %Y %H:%M') }}</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 rounded text-sm font-medium bg-red-100 text-red-700">
+                                <i class="fas fa-times-circle mr-1"></i> Rejected by Supervisor
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-12 text-gray-500">
+            <i class="fas fa-inbox text-6xl mb-4 text-gray-300"></i>
+            <h3 class="text-2xl font-bold mb-2">No Supervisor Actions Yet</h3>
+            <p>No uploads approved or rejected by supervisor yet.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

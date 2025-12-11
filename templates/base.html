@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MANAGEMENT INFORMATION SYSTEM{% endblock %}</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    {% if 'user_id' in session %}
+    <nav class="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-4">
+            <!-- Top Section: Logo and Title -->
+            <div class="flex justify-between items-center mb-3">
+                <div class="flex items-center gap-3">
+                    <img src="{{ url_for('static', filename='logo.png') }}" alt="KSPL Logo" class="w-12 h-12 object-contain">
+                    <div>
+                        <h1 class="text-xl font-bold">MIS System</h1>
+                        <p class="text-xs opacity-75">Management Information System</p>
+                    </div>
+                </div>
+
+                <!-- User Info Badge -->
+                <div class="flex items-center gap-3">
+                    <div class="text-right hidden sm:block">
+                        <p class="text-sm font-semibold">{{ current_user.EmpID }}</p>
+                        {% if current_user.Username %}<p class="text-xs opacity-75">{{ current_user.Username }}</p>{% endif %}
+                        <span class="inline-block mt-1 px-2 py-0.5 bg-blue-500 rounded-full text-xs font-medium">
+                            {{ current_user.role.RoleName }}
+                        </span>
+                    </div>
+                    <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user text-white"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <div class="flex flex-wrap gap-2 items-center">
+                <!-- Primary Navigation -->
+                <a href="{{ url_for('dashboard') }}" class="nav-button {% if request.endpoint == 'dashboard' %}nav-button-active{% endif %}">
+                    <i class="fas fa-home mr-2"></i>Dashboard
+                </a>
+
+                <div class="nav-separator"></div>
+
+                <!-- Admin Only Section -->
+                {% if current_user.role.RoleName == 'Admin' %}
+                <a href="{{ url_for('config_master') }}" class="nav-button {% if request.endpoint == 'config_master' %}nav-button-active{% endif %}">
+                    <i class="fas fa-cog mr-1"></i>Configuration
+                </a>
+                <a href="{{ url_for('user_management') }}" class="nav-button {% if request.endpoint == 'user_management' %}nav-button-active{% endif %}">
+                    <i class="fas fa-users mr-1"></i>Users
+                </a>
+                <a href="{{ url_for('template_management') }}" class="nav-button {% if request.endpoint == 'template_management' %}nav-button-active{% endif %}">
+                    <i class="fas fa-file-excel mr-1"></i>Templates
+                </a>
+                <a href="{{ url_for('admin_mis_tracking') }}" class="nav-button {% if request.endpoint == 'admin_mis_tracking' %}nav-button-active{% endif %}">
+                    <i class="fas fa-chart-line mr-1"></i>MIS Tracking
+                </a>
+                <div class="nav-separator"></div>
+                {% endif %}
+
+                <!-- Supervisor Section -->
+                {% if current_user.role.RoleName == 'Supervisor' %}
+                <a href="{{ url_for('supervisor_uploads') }}" class="nav-button {% if request.endpoint == 'supervisor_uploads' %}nav-button-active{% endif %}">
+                    <i class="fas fa-check-double mr-1"></i>Review HOD
+                </a>
+                <a href="{{ url_for('supervisor_mis_tracking') }}" class="nav-button {% if request.endpoint == 'supervisor_mis_tracking' %}nav-button-active{% endif %}">
+                    <i class="fas fa-chart-line mr-1"></i>MIS Tracking
+                </a>
+                <a href="{{ url_for('prepare_consolidated_mis') }}" class="nav-button {% if request.endpoint == 'prepare_consolidated_mis' %}nav-button-active{% endif %}">
+                    <i class="fas fa-layer-group mr-1"></i>Prepare MIS
+                </a>
+                <a href="{{ url_for('supervisor_history') }}" class="nav-button {% if request.endpoint == 'supervisor_history' %}nav-button-active{% endif %}">
+                    <i class="fas fa-history mr-1"></i>History
+                </a>
+                <div class="nav-separator"></div>
+                {% endif %}
+
+                <!-- Upload Section -->
+                {% if current_user.role.RoleName in ['Admin', 'HOD'] %}
+                <a href="{{ url_for('mis_upload') }}" class="nav-button nav-button-highlight {% if request.endpoint == 'mis_upload' %}nav-button-active{% endif %}">
+                    <i class="fas fa-cloud-upload-alt mr-1"></i>MIS Upload
+                </a>
+                <div class="nav-separator"></div>
+                {% endif %}
+
+                <!-- HOD Only Section -->
+                {% if current_user.role.RoleName == 'HOD' %}
+                <a href="{{ url_for('my_uploads') }}" class="nav-button {% if request.endpoint == 'my_uploads' %}nav-button-active{% endif %}">
+                    <i class="fas fa-file-upload mr-1"></i>My Uploads
+                </a>
+                <div class="nav-separator"></div>
+                {% endif %}
+
+                <!-- Management Role Section -->
+                {% if current_user.role.RoleName == 'Management' %}
+                <a href="{{ url_for('management_consolidated_reports') }}" class="nav-button {% if request.endpoint == 'management_consolidated_reports' %}nav-button-active{% endif %}">
+                    <i class="fas fa-chart-line mr-1"></i>Individual Consolidated MIS
+                </a>
+                <a href="{{ url_for('consolidated_mis_dashboard') }}" class="nav-button {% if request.endpoint == 'consolidated_mis_dashboard' %}nav-button-active{% endif %}">
+                    <i class="fas fa-layer-group mr-1"></i>Consolidated MIS Dashboard
+                </a>
+                <a href="{{ url_for('management_consolidated_queue') }}" class="nav-button {% if request.endpoint == 'management_consolidated_queue' %}nav-button-active{% endif %}">
+                    <i class="fas fa-hourglass-half mr-1"></i>Queue
+                </a>
+                <a href="{{ url_for('management_history') }}" class="nav-button {% if request.endpoint == 'management_history' %}nav-button-active{% endif %}">
+                    <i class="fas fa-history mr-1"></i>History
+                </a>
+                <a href="{{ url_for('management_mis_tracking') }}" class="nav-button {% if request.endpoint == 'management_mis_tracking' %}nav-button-active{% endif %}">
+                    <i class="fas fa-chart-bar mr-1"></i>MIS Tracking
+                </a>
+                <div class="nav-separator"></div>
+                {% endif %}
+
+                <!-- Reports -->
+                <a href="{{ url_for('reports') }}" class="nav-button {% if request.endpoint == 'reports' %}nav-button-active{% endif %}">
+                    <i class="fas fa-chart-bar mr-1"></i>Reports
+                </a>
+
+                <!-- Logout -->
+                <div class="ml-auto">
+                    <a href="{{ url_for('logout') }}" class="nav-button nav-button-logout">
+                        <i class="fas fa-sign-out-alt mr-1"></i>Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    <div class="container mx-auto px-4 py-6">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'error' if category == 'error' else 'success' if category == 'success' else 'warning' if category == 'warning' else 'info' }}">
+                        <i class="fas fa-{{ 'exclamation-circle' if category == 'error' else 'check-circle' if category == 'success' else 'exclamation-triangle' if category == 'warning' else 'info-circle' }}"></i>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer class="bg-gray-800 text-white mt-12 py-6">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-sm">&copy; 2025 MANAGEMENT INFORMATION SYSTEM. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

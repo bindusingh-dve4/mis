@@ -1,0 +1,567 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - MIS {% endblock %}
+View
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="mb-8 flex justify-between items-center">
+        <div>
+            <h2 class="text-4xl font-bold text-gray-800 mb-2 flex items-center gap-3">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="KSPL Logo" class="w-12 h-12 object-contain">
+                Welcome{% if current_user.Username %}, {{ current_user.Username }}{% else %}, {{ current_user.EmpID }}{% endif %}!
+            </h2>
+            <p class="text-gray-600">{{ current_user.role.RoleName }} Dashboard - {{ current_user.department.DeptName }} Department</p>
+        </div>
+        <button onclick="openChangePasswordModal()" class="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2">
+            <i class="fas fa-key"></i>
+            Change Password
+        </button>
+    </div>
+
+    <!-- In-App Alerts -->
+    {% if stats.hod_blocked_message %}
+    <div class="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg flex items-start gap-4">
+        <div class="text-red-600 text-2xl">
+            <i class="fas fa-lock"></i>
+        </div>
+        <div class="flex-1">
+            <h3 class="text-lg font-bold text-red-800 mb-1">Upload Blocked - Approved MIS Exists</h3>
+            <p class="text-red-700">{{ stats.hod_blocked_message }}</p>
+        </div>
+    </div>
+    {% elif stats.upload_allowed %}
+    <div class="mb-6 p-4 bg-green-50 border-l-4 border-green-500 rounded-lg flex items-start gap-4">
+        <div class="text-green-600 text-2xl">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="flex-1">
+            <h3 class="text-lg font-bold text-green-800 mb-1">MIS Upload Window is OPEN</h3>
+            <p class="text-green-700">{{ stats.upload_message }}</p>
+            {% if current_user.role.RoleName in ['Admin', 'HOD'] %}
+            <a href="{{ url_for('mis_upload') }}" class="inline-block mt-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-sm">
+                <i class="fas fa-cloud-upload-alt mr-2"></i>Upload MIS Report Now
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div class="mb-6 p-4 bg-amber-50 border-l-4 border-amber-500 rounded-lg flex items-start gap-4">
+        <div class="text-amber-600 text-2xl">
+            <i class="fas fa-times-circle"></i>
+        </div>
+        <div class="flex-1">
+            <h3 class="text-lg font-bold text-amber-800 mb-1">MIS Upload Window is CLOSED</h3>
+            {% if current_user.role.RoleName == 'Admin' %}
+            <p class="text-amber-700">Open only for admins.</p>
+            {% else %}
+            <p class="text-amber-700">{{ stats.upload_message }}</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    {% if current_user.role.RoleName == 'Admin' %}
+
+    {% endif %}
+
+    {% if current_user.role.RoleName == 'Management' %}
+    {% if stats.pending_uploads_count > 0 %}
+    <div class="mb-6 p-4 bg-orange-50 border-l-4 border-orange-500 rounded-lg">
+        <div class="flex items-start gap-4">
+            <div class="text-orange-600 text-2xl">
+                <i class="fas fa-bell"></i>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-lg font-bold text-orange-800 mb-3">Pending Consolidated MIS</h3>
+                <div class="space-y-2 mb-3">
+                    {% for consolidated in stats.management_pending_consolidated %}
+                    <div class="bg-white p-3 rounded-lg border border-orange-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-semibold text-gray-800">
+                                    Consolidated MIS - {{ ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][consolidated.MonthID] }} {{ consolidated.financial_year.FYName }}
+                                </p>
+                                <p class="text-sm text-gray-600">
+                                    Prepared by {{ consolidated.supervisor.Username or consolidated.supervisor.EmpID }} on {{ consolidated.CreatedDate.strftime('%d %b %Y') }}
+                                </p>
+                            </div>
+                            <a href="{{ url_for('view_consolidated_mis', consolidated_id=consolidated.ConsolidatedMISID) }}" class="text-blue-600 hover:text-blue-800 font-medium text-sm whitespace-nowrap ml-2">
+                                <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% if stats.pending_uploads_count > 2 %}
+                <a href="{{ url_for('management_consolidated_queue') }}" class="inline-block px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors text-sm font-medium">
+                    <i class="fas fa-eye mr-2"></i>View All ({{ stats.pending_uploads_count }} total)
+                </a>
+                {% else %}
+                <a href="{{ url_for('management_consolidated_queue') }}" class="inline-block px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors text-sm font-medium">
+                    <i class="fas fa-check-double mr-2"></i>Review All
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+
+    <!-- Statistics Cards (Admin and Management only) -->
+    {% if current_user.role.RoleName in ['Admin', 'Management'] %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <i class="fas fa-users text-3xl mb-3 opacity-80"></i>
+            <div class="stat-value">{{ stats.total_users }}</div>
+            <div class="stat-label">Total Users</div>
+        </div>
+
+        <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <i class="fas fa-building text-3xl mb-3 opacity-80"></i>
+            <div class="stat-value">{{ stats.total_depts }}</div>
+            <div class="stat-label">Departments</div>
+        </div>
+
+        <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <i class="fas fa-upload text-3xl mb-3 opacity-80"></i>
+            <div class="stat-value">{{ stats.total_uploads }}</div>
+            <div class="stat-label">Total Uploads</div>
+        </div>
+
+        <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+            <i class="fas fa-calendar-alt text-3xl mb-3 opacity-80"></i>
+            <div class="stat-value text-xl">{{ stats.active_fy }}</div>
+            <div class="stat-label">Active Financial Year</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Quick Actions -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% if current_user.role.RoleName == 'Admin' %}
+        <div class="card p-6 hover:shadow-xl transition-all">
+            <div class="flex items-start gap-4">
+                <div class="bg-blue-100 p-3 rounded-lg">
+                    <i class="fas fa-cog text-blue-600 text-2xl"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-xl font-bold mb-2 text-gray-800">Configuration Master</h3>
+                    <p class="text-gray-600 mb-4 text-sm">Manage companies, financial years, and departments</p>
+                    <a href="{{ url_for('config_master') }}" class="btn btn-primary text-sm">
+                        <i class="fas fa-arrow-right mr-2"></i> Manage Configuration
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-6 hover:shadow-xl transition-all">
+            <div class="flex items-start gap-4">
+                <div class="bg-purple-100 p-3 rounded-lg">
+                    <i class="fas fa-users text-purple-600 text-2xl"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-xl font-bold mb-2 text-gray-800">User Management</h3>
+                    <p class="text-gray-600 mb-4 text-sm">Create and manage user accounts</p>
+                    <a href="{{ url_for('user_management') }}" class="btn btn-primary text-sm">
+                        <i class="fas fa-user-plus mr-2"></i> Manage Users
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-6 hover:shadow-xl transition-all">
+            <div class="flex items-start gap-4">
+                <div class="bg-green-100 p-3 rounded-lg">
+                    <i class="fas fa-file-excel text-green-600 text-2xl"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-xl font-bold mb-2 text-gray-800">Template Management</h3>
+                    <p class="text-gray-600 mb-4 text-sm">Upload department-specific Excel templates</p>
+                    <a href="{{ url_for('template_management') }}" class="btn btn-primary text-sm">
+                        <i class="fas fa-file-upload mr-2"></i> Manage Templates
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if current_user.role.RoleName in ['Admin', 'HOD'] %}
+        <div class="card p-6 hover:shadow-xl transition-all">
+            <div class="flex items-start gap-4">
+                <div class="bg-orange-100 p-3 rounded-lg">
+                    <i class="fas fa-upload text-orange-600 text-2xl"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-xl font-bold mb-2 text-gray-800">MIS Upload</h3>
+                    <p class="text-gray-600 mb-4 text-sm">Upload monthly MIS reports ({{ upload_window_start }}st-{{ upload_window_end }}th of month)</p>
+                    <a href="{{ url_for('mis_upload') }}" class="btn btn-primary text-sm">
+                        <i class="fas fa-cloud-upload-alt mr-2"></i> Upload MIS
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card p-6 hover:shadow-xl transition-all">
+            <div class="flex items-start gap-4">
+                <div class="bg-cyan-100 p-3 rounded-lg">
+                    <i class="fas fa-chart-bar text-cyan-600 text-2xl"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-xl font-bold mb-2 text-gray-800">Reports & Analytics</h3>
+                    <p class="text-gray-600 mb-4 text-sm">View and download comprehensive MIS reports</p>
+                    <a href="{{ url_for('reports') }}" class="btn btn-primary text-sm">
+                        <i class="fas fa-chart-line mr-2"></i> View Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        {% if current_user.role.RoleName == 'HOD' %}
+        <div class="card p-6 hover:shadow-xl transition-all">
+            <div class="flex items-start gap-4">
+                <div class="bg-teal-100 p-3 rounded-lg">
+                    <i class="fas fa-file-upload text-teal-600 text-2xl"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-xl font-bold mb-2 text-gray-800">My Uploads</h3>
+                    <p class="text-gray-600 mb-4 text-sm">View status and details of your submissions</p>
+                    <a href="{{ url_for('my_uploads') }}" class="btn btn-primary text-sm">
+                        <i class="fas fa-list mr-2"></i> View My Uploads
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if current_user.role.RoleName == 'Admin' %}
+        <div class="card p-6 hover:shadow-xl transition-all">
+            <div class="flex items-start gap-4">
+                <div class="bg-pink-100 p-3 rounded-lg">
+                    <i class="fas fa-check-circle mr-1"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-xl font-bold mb-2 text-gray-800">Approved MIS</h3>
+                    <p class="text-gray-600 mb-4 text-sm">View and manage all approved MIS uploads</p>
+                    <div class="flex gap-2">
+                        <a href="{{ url_for('approved_mis') }}" class="btn btn-primary text-sm">
+                            <i class="fas fa-folder-open mr-1"></i> Individual MIS
+                        </a>
+                        <a href="{{ url_for('admin_consolidated_management') }}" class="btn bg-purple-600 text-white hover:bg-purple-700 text-sm">
+                            <i class="fas fa-layer-group mr-1"></i> Consolidated MIS
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-6 hover:shadow-xl transition-all">
+            <div class="flex items-start gap-4">
+                <div class="bg-indigo-100 p-3 rounded-lg">
+                    <i class="fas fa-chart-line text-indigo-600 text-2xl"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-xl font-bold mb-2 text-gray-800">MIS Tracking</h3>
+                    <p class="text-gray-600 mb-4 text-sm">Monitor department-wise MIS submission status</p>
+                    <a href="{{ url_for('admin_mis_tracking') }}" class="btn btn-primary text-sm">
+                        <i class="fas fa-eye mr-2"></i> Track Submissions
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if current_user.role.RoleName == 'Supervisor' %}
+        <!-- Pending Requests Notification -->
+        {% if stats.supervisor_pending_count > 0 %}
+        <div class="mb-6 p-4 bg-orange-50 border-l-4 border-orange-500 rounded-lg">
+            <div class="flex items-start gap-4">
+                <div class="text-orange-600 text-2xl">
+                    <i class="fas fa-bell"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-lg font-bold text-orange-800 mb-3">Pending HOD Uploads</h3>
+                    <div class="space-y-2 mb-3">
+                        {% for upload in stats.supervisor_pending_uploads %}
+                        <div class="bg-white p-3 rounded-lg border border-orange-200">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="font-semibold text-gray-800">
+                                        <span class="font-mono text-blue-600">{{ upload.UploadCode }}</span> - {{ upload.department.DeptName }}
+                                    </p>
+                                    <p class="text-sm text-gray-600">
+                                        {{ ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][upload.MonthID] }} - Uploaded by {{ upload.uploader.Username }}
+                                    </p>
+                                </div>
+                                <a href="{{ url_for('view_hod_upload', upload_id=upload.UploadID) }}" class="text-blue-600 hover:text-blue-800 font-medium text-sm whitespace-nowrap ml-2">
+                                    <i class="fas fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if stats.supervisor_pending_count > 2 %}
+                    <a href="{{ url_for('supervisor_uploads') }}" class="inline-block px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors text-sm font-medium">
+                        <i class="fas fa-eye mr-2"></i>View All ({{ stats.supervisor_pending_count }} total)
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('supervisor_uploads') }}" class="inline-block px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors text-sm font-medium">
+                        <i class="fas fa-check-double mr-2"></i>Review All
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card p-6 hover:shadow-xl transition-all">
+            <div class="flex items-start gap-4">
+                <div class="bg-purple-100 p-3 rounded-lg">
+                    <i class="fas fa-check-double text-purple-600 text-2xl"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-xl font-bold mb-2 text-gray-800">HOD MIS Review</h3>
+                    <p class="text-gray-600 mb-4 text-sm">Supervisor approval window: {{ supervisor_approval_start_day }}th - {{ supervisor_approval_end_day }}th of month</p>
+                    <div class="flex gap-2">
+                        <a href="{{ url_for('supervisor_uploads') }}" class="btn btn-primary text-sm">
+                            <i class="fas fa-hourglass-half mr-1"></i> Pending Queue
+                        </a>
+                        <a href="{{ url_for('supervisor_history') }}" class="btn bg-blue-600 text-white hover:bg-blue-700 text-sm px-4 py-2 rounded-lg">
+                            <i class="fas fa-history mr-1"></i> View History
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-6 hover:shadow-xl transition-all">
+            <div class="flex items-start gap-4">
+                <div class="bg-pink-100 p-3 rounded-lg">
+                    <i class="fas fa-layer-group text-pink-600 text-2xl"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-xl font-bold mb-2 text-gray-800">Prepare Consolidated MIS</h3>
+                    <p class="text-gray-600 mb-4 text-sm">Select approved uploads and prepare consolidated MIS</p>
+                    <a href="{{ url_for('prepare_consolidated_mis') }}" class="btn btn-primary text-sm">
+                        <i class="fas fa-layer-group mr-2"></i> Prepare MIS
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if current_user.role.RoleName == 'Management' %}
+        <div class="card p-6 hover:shadow-xl transition-all">
+            <div class="flex items-start gap-4">
+                <div class="bg-orange-100 p-3 rounded-lg">
+                    <i class="fas fa-layer-group text-orange-600 text-2xl"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-xl font-bold mb-2 text-gray-800">Consolidated MIS Records</h3>
+                    <p class="text-gray-600 mb-4 text-sm">View all consolidated MIS reports</p>
+                    <a href="{{ url_for('management_consolidated_queue') }}" class="btn btn-primary text-sm">
+                        <i class="fas fa-eye mr-2"></i> View Records
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-6 hover:shadow-xl transition-all">
+            <div class="flex items-start gap-4">
+                <div class="bg-purple-100 p-3 rounded-lg">
+                    <i class="fas fa-file-alt text-purple-600 text-2xl"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-xl font-bold mb-2 text-gray-800">Consolidated Reports</h3>
+                    <p class="text-gray-600 mb-4 text-sm">View and download all consolidated MIS reports</p>
+                    <a href="{{ url_for('management_consolidated_reports') }}" class="btn btn-primary text-sm">
+                        <i class="fas fa-download mr-2"></i> View Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-6 hover:shadow-xl transition-all">
+            <div class="flex items-start gap-4">
+                <div class="bg-indigo-100 p-3 rounded-lg">
+                    <i class="fas fa-history text-indigo-600 text-2xl"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-xl font-bold mb-2 text-gray-800">MIS Upload History</h3>
+                    <p class="text-gray-600 mb-4 text-sm">View complete history of all MIS uploads</p>
+                    <a href="{{ url_for('management_history') }}" class="btn btn-primary text-sm">
+                        <i class="fas fa-book mr-2"></i> View History
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-6 hover:shadow-xl transition-all">
+            <div class="flex items-start gap-4">
+                <div class="bg-teal-100 p-3 rounded-lg">
+                    <i class="fas fa-chart-line text-teal-600 text-2xl"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-xl font-bold mb-2 text-gray-800">MIS Tracking</h3>
+                    <p class="text-gray-600 mb-4 text-sm">Monitor department-wise MIS submission status</p>
+                    <a href="{{ url_for('management_mis_tracking') }}" class="btn btn-primary text-sm">
+                        <i class="fas fa-eye mr-2"></i> Track Submissions
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Recent Activity (Admin only) -->
+    {% if current_user.role.RoleName == 'Admin' %}
+    <div class="mt-8 card p-6">
+        <h3 class="text-2xl font-bold mb-4 text-gray-800 flex items-center gap-2">
+            <i class="fas fa-history text-blue-600"></i> Recent Activity
+        </h3>
+        <div class="space-y-3">
+            {% for upload in stats.recent_uploads %}
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-file-excel text-green-600"></i>
+                    <div>
+                        <p class="font-semibold text-gray-800">{{ upload.department.DeptName }} - {{ ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][upload.MonthID] }} {{ upload.financial_year.FYName }}</p>
+                        <p class="text-sm text-gray-600">Uploaded by {{ upload.uploader.Username }} on {{ upload.UploadDate.strftime('%d %b %Y') }}</p>
+                    </div>
+                </div>
+                <span class="badge badge-{{ upload.Status.lower() }}">
+                    {{ upload.Status }}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent Activity (Management only - Consolidated MIS) -->
+    {% if current_user.role.RoleName == 'Management' %}
+    <div class="mt-8 card p-6">
+        <h3 class="text-2xl font-bold mb-4 text-gray-800 flex items-center gap-2">
+            <i class="fas fa-history text-blue-600"></i> Recent Consolidated MIS
+        </h3>
+        <div class="space-y-3">
+            {% for consolidated in stats.recent_uploads %}
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-layer-group text-purple-600"></i>
+                    <div>
+                        <p class="font-semibold text-gray-800">Consolidated MIS - {{ ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][consolidated.MonthID] }} {{ consolidated.financial_year.FYName }}</p>
+                        <p class="text-sm text-gray-600">Prepared by {{ consolidated.supervisor.Username }} on {{ consolidated.CreatedDate.strftime('%d %b %Y') }}</p>
+                    </div>
+                </div>
+                <span class="badge" style="background-color: {% if consolidated.Status == 'Approved' %}#d1fae5{% elif consolidated.Status == 'Rejected' %}#fee2e2{% else %}#f3e8ff{% endif %}; color: {% if consolidated.Status == 'Approved' %}#065f46{% elif consolidated.Status == 'Rejected' %}#7f1d1d{% else %}#6b21a8{% endif %};">
+                    {{ consolidated.Status }}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Change Password Modal -->
+<div id="changePasswordModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <i class="fas fa-key text-indigo-600"></i>
+                Change Password
+            </h3>
+            <button onclick="closeChangePasswordModal()" class="text-gray-400 hover:text-gray-600 text-2xl">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <form method="POST" action="{{ url_for('change_password') }}" onsubmit="return validatePasswordChange()">
+            <div class="mb-4">
+                <label class="block text-gray-700 font-medium mb-2">
+                    <i class="fas fa-lock mr-2 text-gray-400"></i> Current Password
+                </label>
+                <input type="password" id="currentPassword" name="current_password" required 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-gray-700 font-medium mb-2">
+                    <i class="fas fa-lock mr-2 text-gray-400"></i> New Password
+                </label>
+                <input type="password" id="newPassword" name="new_password" required 
+                       minlength="6"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <p class="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-gray-700 font-medium mb-2">
+                    <i class="fas fa-lock mr-2 text-gray-400"></i> Confirm New Password
+                </label>
+                <input type="password" id="confirmPassword" name="confirm_password" required 
+                       minlength="6"
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <div id="passwordError" class="hidden mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 rounded">
+                <i class="fas fa-exclamation-circle mr-2"></i>
+                <span id="passwordErrorMessage"></span>
+            </div>
+
+            <div class="flex gap-3">
+                <button type="submit" class="flex-1 bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+                    <i class="fas fa-check mr-2"></i> Update Password
+                </button>
+                <button type="button" onclick="closeChangePasswordModal()" class="flex-1 bg-gray-300 text-gray-700 py-3 rounded-lg hover:bg-gray-400 transition-colors font-medium">
+                    <i class="fas fa-times mr-2"></i> Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openChangePasswordModal() {
+    document.getElementById('changePasswordModal').classList.remove('hidden');
+}
+
+function closeChangePasswordModal() {
+    document.getElementById('changePasswordModal').classList.add('hidden');
+    document.getElementById('currentPassword').value = '';
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmPassword').value = '';
+    document.getElementById('passwordError').classList.add('hidden');
+}
+
+function validatePasswordChange() {
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    const errorDiv = document.getElementById('passwordError');
+    const errorMessage = document.getElementById('passwordErrorMessage');
+
+    if (newPassword !== confirmPassword) {
+        errorMessage.textContent = 'New password and confirm password do not match!';
+        errorDiv.classList.remove('hidden');
+        return false;
+    }
+
+    if (newPassword.length < 6) {
+        errorMessage.textContent = 'Password must be at least 6 characters long!';
+        errorDiv.classList.remove('hidden');
+        return false;
+    }
+
+    errorDiv.classList.add('hidden');
+    return true;
+}
+
+// Close modal when clicking outside
+document.getElementById('changePasswordModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeChangePasswordModal();
+    }
+});
+</script>
+
+{% endblock %}

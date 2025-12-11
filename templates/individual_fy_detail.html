@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Individual MIS - {{ fy.FYName }} Details{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <!-- Header with Back Button -->
+    <div class="mb-8 flex items-center justify-between">
+        <div>
+            <h2 class="text-4xl font-bold text-gray-800 mb-2">
+                <i class="fas fa-calendar text-blue-600 mr-2"></i>{{ fy.FYName }} - Individual MIS Reports
+            </h2>
+            <p class="text-gray-600">Detailed view of all individual department MIS reports for {{ fy.FYName }}</p>
+        </div>
+        <a href="{{ url_for('management_consolidated_reports') }}" class="btn bg-gray-500 text-white hover:bg-gray-600 px-6 py-2">
+            <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
+            <p class="text-blue-100 text-sm font-medium mb-1">Total Reports</p>
+            <h3 class="text-4xl font-bold">{{ reports|length }}</h3>
+        </div>
+        <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-6 text-white">
+            <p class="text-orange-100 text-sm font-medium mb-1">In Review</p>
+            <h3 class="text-4xl font-bold">{{ reports|selectattr('Status', 'equalto', 'In Review')|list|length }}</h3>
+        </div>
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
+            <p class="text-green-100 text-sm font-medium mb-1">Approved</p>
+            <h3 class="text-4xl font-bold">{{ reports|selectattr('Status', 'equalto', 'Approved')|list|length }}</h3>
+        </div>
+        <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-6 text-white">
+            <p class="text-red-100 text-sm font-medium mb-1">Rejected</p>
+            <h3 class="text-4xl font-bold">{{ reports|selectattr('Status', 'equalto', 'Rejected')|list|length }}</h3>
+        </div>
+    </div>
+
+    <!-- Reports Table -->
+    <div class="card p-6">
+        <h3 class="text-2xl font-bold text-gray-800 mb-6">
+            <i class="fas fa-file-alt text-blue-600 mr-2"></i>Reports Details
+        </h3>
+
+        {% if reports %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="bg-blue-50 border-b-2 border-blue-200">
+                        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">MIS Code</th>
+                        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Department</th>
+                        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Month</th>
+                        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Upload Date</th>
+                        <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
+                        <th class="px-6 py-3 text-center text-sm font-semibold text-gray-700">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for report in reports %}
+                    {% set month_names = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] %}
+                    <tr class="border-b border-gray-200 hover:bg-gray-50 transition">
+                        <td class="px-6 py-4 text-sm font-mono text-gray-800">{{ report.UploadCode }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-700">{{ report.department.DeptName }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-700">{{ month_names[report.MonthID] if 1 <= report.MonthID <= 12 else 'N/A' }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ report.UploadDate.strftime('%d %b %Y') if report.UploadDate else 'N/A' }}</td>
+                        <td class="px-6 py-4 text-sm">
+                            {% if report.Status == 'In Review' %}
+                                <span class="badge bg-orange-100 text-orange-800">In Review</span>
+                            {% elif report.Status == 'Approved' %}
+                                <span class="badge bg-green-100 text-green-800">Approved</span>
+                            {% elif report.Status == 'Rejected' %}
+                                <span class="badge bg-red-100 text-red-800">Rejected</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <a href="{{ url_for('view_hod_upload', upload_id=report.UploadID) }}" class="text-blue-600 hover:text-blue-800 font-semibold">
+                                <i class="fas fa-eye mr-1"></i>View
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+            <i class="fas fa-inbox text-gray-400 text-4xl mb-4"></i>
+            <p class="text-gray-600 text-lg">No individual reports found for {{ fy.FYName }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

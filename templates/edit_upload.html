@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}Modify MIS Upload{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto p-6">
+    <div class="card p-8 mb-6">
+        <h1 class="text-4xl font-bold mb-2 text-gray-800">
+            <i class="fas fa-edit text-blue-600 mr-3"></i> Modify MIS Upload
+        </h1>
+        <p class="text-gray-600">Update the MIS file for your submission before Management approval</p>
+    </div>
+    
+    <!-- Current Upload Details -->
+    <div class="card p-6 mb-6 border-l-4 border-blue-600">
+        <h2 class="text-xl font-bold mb-4 text-gray-800">Current Upload Details</h2>
+        
+        <div class="grid grid-cols-2 gap-4 mb-4">
+            <div>
+                <label class="text-gray-600 font-semibold">MIS Code:</label>
+                <p class="text-lg text-blue-600 font-mono">{{ upload.UploadCode }}</p>
+            </div>
+            <div>
+                <label class="text-gray-600 font-semibold">Department:</label>
+                <p class="text-lg">{{ upload.department.DeptName }}</p>
+            </div>
+            <div>
+                <label class="text-gray-600 font-semibold">Financial Year:</label>
+                <p class="text-lg">{{ upload.financial_year.FYName }}</p>
+            </div>
+            <div>
+                <label class="text-gray-600 font-semibold">Month:</label>
+                <p class="text-lg">{{ ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][upload.MonthID] }}</p>
+            </div>
+            <div>
+                <label class="text-gray-600 font-semibold">Status:</label>
+                <span class="badge badge-pending">
+                    <i class="fas fa-clock mr-1"></i> {{ upload.Status }}
+                </span>
+            </div>
+            <div>
+                <label class="text-gray-600 font-semibold">Uploaded On:</label>
+                <p class="text-lg">{{ upload.UploadDate.strftime('%d %b %Y %H:%M') }}</p>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <label class="text-gray-600 font-semibold">File Status:</label>
+            <span class="badge badge-validated">
+                <i class="fas fa-check mr-1"></i> {{ upload.FileCheck }}
+            </span>
+        </div>
+    </div>
+    
+    <!-- Upload New File Form -->
+    <div class="card p-6">
+        <h2 class="text-xl font-bold mb-4 text-gray-800">
+            <i class="fas fa-cloud-upload-alt text-green-600 mr-2"></i> Upload Replacement File
+        </h2>
+        
+        <form method="POST" enctype="multipart/form-data" class="space-y-6">
+            <div class="form-group">
+                <label for="file" class="block text-gray-700 font-semibold mb-2">
+                    <i class="fas fa-file-excel text-green-600 mr-2"></i> Excel File (.xls or .xlsx)
+                </label>
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition"
+                     id="dropZone">
+                    <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-3"></i>
+                    <p class="text-gray-600 mb-2">Drag and drop your file here, or click to select</p>
+                    <input type="file" 
+                           name="file" 
+                           id="file" 
+                           accept=".xls,.xlsx" 
+                           class="hidden"
+                           required>
+                    <label for="file" class="btn btn-primary inline-block">
+                        <i class="fas fa-folder-open mr-2"></i> Choose File
+                    </label>
+                    <p class="text-sm text-gray-500 mt-3">Maximum file size: 10 MB</p>
+                </div>
+                <p class="text-sm text-gray-500 mt-2">File name: <span id="fileName" class="font-mono text-blue-600">No file selected</span></p>
+            </div>
+            
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div class="flex items-start">
+                    <i class="fas fa-info-circle text-blue-600 mr-3 mt-1 flex-shrink-0"></i>
+                    <div>
+                        <h4 class="font-semibold text-blue-900 mb-2">Important Note</h4>
+                        <ul class="text-sm text-blue-800 space-y-1">
+                            <li>✓ Your upload status will remain "In Review"</li>
+                            <li>✓ Management will see a "Modified" badge to know you updated it</li>
+                            <li>✓ You can modify again before Management approves</li>
+                            <li>✓ After approval, you cannot modify further</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex gap-3">
+                <button type="submit" class="btn btn-success flex-1">
+                    <i class="fas fa-check mr-2"></i> Update & Submit
+                </button>
+                <a href="{{ url_for('my_uploads') }}" class="btn btn-secondary flex-1">
+                    <i class="fas fa-times mr-2"></i> Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // File input handling
+    const fileInput = document.getElementById('file');
+    const fileNameDisplay = document.getElementById('fileName');
+    const dropZone = document.getElementById('dropZone');
+    
+    // File selection
+    fileInput.addEventListener('change', function() {
+        if (this.files.length > 0) {
+            fileNameDisplay.textContent = this.files[0].name;
+        } else {
+            fileNameDisplay.textContent = 'No file selected';
+        }
+    });
+    
+    // Drag and drop
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('border-blue-500', 'bg-blue-50');
+    });
+    
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('border-blue-500', 'bg-blue-50');
+    });
+    
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-blue-500', 'bg-blue-50');
+        
+        if (e.dataTransfer.files.length > 0) {
+            fileInput.files = e.dataTransfer.files;
+            fileNameDisplay.textContent = e.dataTransfer.files[0].name;
+        }
+    });
+</script>
+{% endblock %}

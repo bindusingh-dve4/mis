@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Prepare Consolidated MIS - Supervisor{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="mb-8">
+        <h2 class="text-4xl font-bold text-gray-800 mb-2">
+            <i class="fas fa-layer-group text-purple-600"></i> Prepare Consolidated MIS
+        </h2>
+        <p class="text-gray-600">Select approved HOD MIS uploads and prepare consolidated MIS for Management review (Available Anytime)</p>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2">
+            <div class="card p-6">
+                <h3 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                    <i class="fas fa-check-square text-green-600"></i> Approved HOD Uploads ({{ approved_uploads|length }})
+                </h3>
+                
+                {% if approved_uploads %}
+                <form method="POST" action="{{ url_for('upload_consolidated_mis') }}" enctype="multipart/form-data">
+                    <div class="space-y-3 mb-6">
+                        {% for upload in approved_uploads %}
+                        <div class="border border-green-200 rounded-lg p-4 bg-green-50">
+                            <label class="flex items-start gap-3 cursor-pointer">
+                                <input type="checkbox" name="selected_uploads" value="{{ upload.UploadID }}" class="mt-1">
+                                <div class="flex-1">
+                                    <h4 class="font-bold text-gray-800">
+                                        <span class="font-mono text-green-600">{{ upload.UploadCode }}</span> - {{ upload.department.DeptName }}
+                                    </h4>
+                                    <p class="text-sm text-gray-600">{{ ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][upload.MonthID] }} {{ upload.financial_year.FYName }} | Approved by: {{ upload.uploader.Username }}</p>
+                                </div>
+                                <a href="{{ url_for('download_upload', upload_id=upload.UploadID) }}" class="text-blue-600 hover:text-blue-800 text-sm">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-6">
+                        <label class="block text-gray-700 font-bold mb-2">Upload Consolidated MIS File</label>
+                        <input type="file" name="consolidated_file" accept=".xls,.xlsx" required class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                        <p class="text-sm text-gray-600 mt-1">Excel file (.xls or .xlsx) containing consolidated data</p>
+                    </div>
+                    
+                    <button type="submit" class="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition font-bold">
+                        <i class="fas fa-upload mr-2"></i> Upload Consolidated MIS
+                    </button>
+                </form>
+                {% else %}
+                <div class="text-center py-12 text-gray-500">
+                    <i class="fas fa-inbox text-6xl mb-4 text-gray-300"></i>
+                    <p>No approved HOD uploads available yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div>
+            <div class="card p-6 bg-blue-50">
+                <h3 class="text-xl font-bold mb-4 text-blue-900 flex items-center gap-2">
+                    <i class="fas fa-info-circle"></i> Instructions
+                </h3>
+                <ul class="space-y-2 text-sm text-blue-800">
+                    <li><strong>1.</strong> Select approved HOD MIS uploads</li>
+                    <li><strong>2.</strong> Prepare consolidated file combining selected data</li>
+                    <li><strong>3.</strong> Upload the consolidated Excel file</li>
+                    <li><strong>4.</strong> Management will review and approve</li>
+                </ul>
+                <div class="mt-6 p-4 bg-blue-100 rounded-lg">
+                    <p class="text-xs text-blue-900"><strong>Note:</strong> Ensure selected uploads cover all necessary departments for the month.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Management Approval Status Table -->
+    <div class="card p-6 mt-8">
+        <h3 class="text-2xl font-bold mb-4 flex items-center gap-2">
+            <i class="fas fa-tasks text-indigo-600"></i> All Uploads - Management Status
+        </h3>
+        
+        {% if in_review_uploads or approved_by_management or rejected_by_management %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-100 border-b-2 border-gray-300">
+                    <tr>
+                        <th class="px-4 py-3 text-left font-bold text-gray-700">MIS Code</th>
+                        <th class="px-4 py-3 text-left font-bold text-gray-700">Department</th>
+                        <th class="px-4 py-3 text-left font-bold text-gray-700">Month</th>
+                        <th class="px-4 py-3 text-left font-bold text-gray-700">Uploaded By</th>
+                        <th class="px-4 py-3 text-left font-bold text-gray-700">Upload Date</th>
+                        <th class="px-4 py-3 text-left font-bold text-gray-700">Management Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for upload in in_review_uploads %}
+                    <tr class="border-b border-gray-200 hover:bg-gray-50 transition">
+                        <td class="px-4 py-3">
+                            <a href="{{ url_for('view_hod_upload', upload_id=upload.UploadID) }}" class="font-mono font-bold text-blue-600 hover:text-blue-800 hover:underline">{{ upload.UploadCode }}</a>
+                        </td>
+                        <td class="px-4 py-3">{{ upload.department.DeptName }}</td>
+                        <td class="px-4 py-3">{{ ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][upload.MonthID] }}</td>
+                        <td class="px-4 py-3">{{ upload.uploader.Username }}</td>
+                        <td class="px-4 py-3 text-sm">{{ upload.UploadDate.strftime('%d %b %Y %H:%M') }}</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 rounded text-sm font-medium bg-orange-100 text-orange-700">
+                                <i class="fas fa-hourglass-half mr-1"></i> In Review
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% for upload in approved_by_management %}
+                    <tr class="border-b border-gray-200 hover:bg-gray-50 transition">
+                        <td class="px-4 py-3">
+                            <a href="{{ url_for('view_hod_upload', upload_id=upload.UploadID) }}" class="font-mono font-bold text-blue-600 hover:text-blue-800 hover:underline">{{ upload.UploadCode }}</a>
+                        </td>
+                        <td class="px-4 py-3">{{ upload.department.DeptName }}</td>
+                        <td class="px-4 py-3">{{ ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][upload.MonthID] }}</td>
+                        <td class="px-4 py-3">{{ upload.uploader.Username }}</td>
+                        <td class="px-4 py-3 text-sm">{{ upload.UploadDate.strftime('%d %b %Y %H:%M') }}</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 rounded text-sm font-medium bg-green-100 text-green-700">
+                                <i class="fas fa-check-circle mr-1"></i> Approved by Management
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% for upload in rejected_by_management %}
+                    <tr class="border-b border-gray-200 hover:bg-gray-50 transition">
+                        <td class="px-4 py-3">
+                            <a href="{{ url_for('view_hod_upload', upload_id=upload.UploadID) }}" class="font-mono font-bold text-blue-600 hover:text-blue-800 hover:underline">{{ upload.UploadCode }}</a>
+                        </td>
+                        <td class="px-4 py-3">{{ upload.department.DeptName }}</td>
+                        <td class="px-4 py-3">{{ ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][upload.MonthID] }}</td>
+                        <td class="px-4 py-3">{{ upload.uploader.Username }}</td>
+                        <td class="px-4 py-3 text-sm">{{ upload.UploadDate.strftime('%d %b %Y %H:%M') }}</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 rounded text-sm font-medium bg-red-100 text-red-700">
+                                <i class="fas fa-times-circle mr-1"></i> Rejected by Management
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
